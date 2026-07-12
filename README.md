@@ -1,4 +1,4 @@
-## ITRAP2 plus Additional Plotting Options.
+## ITRAP2 with Additional Plotting Options.
 
 ### Source/Citation
 Grigorii Nos *et al.*  
