@@ -4,13 +4,15 @@
 \alias{scale2}
 \title{Centers and scales a rows in numeric matrix}
 \usage{
-scale2(mat, sd_fun = sd)
+scale2(mat, sd_fun = sd, replace_zero = FALSE)
 }
 \arguments{
 \item{mat}{A numeric matrix (\code{matrix}).}
 
 \item{sd_fun, }{function (\code{function}) that calculates sd, functions are expected to
 have na.rm parameter to remove NA values}
+
+\item{replace_zero}{(\code{logical}) if TRUE, replaces zero SD values with 1e-4 before scaling.}
 }
 \value{
 a mean ceantered and median scaled matrix (\code{matrix})

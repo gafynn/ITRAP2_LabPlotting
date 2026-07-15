@@ -254,7 +254,7 @@ pmhc_heatmap <- function(object, clones, patient=NULL, slot='counts', assay = 'p
                          column_title_rot = 45, clean_mat=F, add_tcr_cluster=F, 
                          show_row_names=T, pmhc_subset=NULL, clean_na_cells = FALSE, 
                          custom_annotations=c(), custom_ann_palette=list(),  
-                         show_legend_ann=FALSE, bugged_width=.6, max_cols=16000, 
+                         show_legend_ann=FALSE, bugged_width=.6, max_cols=100000, 
                          left_ann_vars=NULL, left_ann_palette=NULL, save_to_disc_highlight=F,
                          verbose=T, lwd=2, flip=FALSE, skip_bugged_frames=F, ...) {
 
@@ -286,7 +286,7 @@ pmhc_heatmap <- function(object, clones, patient=NULL, slot='counts', assay = 'p
     { if(!is.null(patient)) filter(., grepl(patient, Patient)) else . } %>%
     pull(Barcode)
   
-  pat_pmhc <- pat_pmhc[pat_pmhc %in% rownames(object[[assay]]@counts)]
+  pat_pmhc <- pat_pmhc[pat_pmhc %in% rownames(GetAssayData(object, layer = "counts", assay = assay))]
   
   pmhc_subset_ <- GetAssayData(object, layer = slot, assay = assay) %>% as.data.frame()
   pmhc_subset_ <- pmhc_subset_[,Cells(object)[object$clone_id %in% clones]][pat_pmhc,]
@@ -759,7 +759,7 @@ pmhc_heatmap_old <- function(object, clones, patient=NULL, slot='counts', assay 
                          stop_large_highlighting=T, show_heatmap_legend=T, rowm.fonts=8, column_title_fonts = 10, 
                          column_title_rot = 45, annotation_colors=list(), clean_mat=F, add_tcr_cluster=F, 
                          show_row_names=T, pmhc_subset=NULL, custom_annotations=c(), skip_bugged_frames=F, 
-                         show_legend_ann=c(F, T, T), bugged_width=.6, max_cols=16000, left_ann_vars=NULL, 
+                         show_legend_ann=c(F, T, T), bugged_width=.6, max_cols=50000, left_ann_vars=NULL, 
                          left_ann_palette=NULL, verbose=T, lwd=2, ...) {
 
   if(length(clones) == 0) {
@@ -787,7 +787,7 @@ pmhc_heatmap_old <- function(object, clones, patient=NULL, slot='counts', assay 
     { if(!is.null(patient)) filter(., grepl(patient, Patient)) else . } %>%
     pull(Barcode)
   
-  pat_pmhc <- pat_pmhc[pat_pmhc %in% rownames(object@assays$pMHC@counts)]
+  pat_pmhc <- pat_pmhc[pat_pmhc %in% rownames(GetAssayData(object, layer="counts", assay="pMHC"))]
   
   pmhc_subset_ <- GetAssayData(object, layer = slot, assay = assay) %>% as.data.frame()
   pmhc_subset_ <- pmhc_subset_[,Cells(object)[object$clone_id %in% clones]][pat_pmhc,]
