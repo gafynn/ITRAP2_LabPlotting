@@ -254,9 +254,9 @@ pmhc_heatmap <- function(object, clones, patient=NULL, slot='counts', assay = 'p
                          column_title_rot = 45, clean_mat=F, add_tcr_cluster=F, 
                          show_row_names=T, pmhc_subset=NULL, clean_na_cells = FALSE, 
                          custom_annotations=c(), custom_ann_palette=list(),  
-                         show_legend_ann=FALSE, bugged_width=.6, max_cols=100000, 
+                         show_legend_ann=FALSE, bugged_width=.6, max_cols=102451, 
                          left_ann_vars=NULL, left_ann_palette=NULL, save_to_disc_highlight=F,
-                         verbose=T, lwd=2, flip=FALSE, skip_bugged_frames=F, ...) {
+                         verbose=T, lwd=2, flip=FALSE, skip_bugged_frames=F, heatmap_legend_param = list()) {
 
   if(length(clones) == 0) {
     stop("list of clonotypes in `clone` argument is empty")
@@ -363,8 +363,6 @@ pmhc_heatmap <- function(object, clones, patient=NULL, slot='counts', assay = 'p
     }
   }
   
-  col_fun = circlize::colorRamp2(hm_breaks, hm_palette)
-  
   if (ncol(pmhc_subset_) > max_cols) {
     set.seed(123) 
     sampled_cols <- sample(colnames(pmhc_subset_), max_cols)
@@ -390,20 +388,35 @@ pmhc_heatmap <- function(object, clones, patient=NULL, slot='counts', assay = 'p
   ann_subset_ordered <- ann_subset[cells_order,]
   pmhc_mat_ordered <- pmhc_mat[,cells_order]
   
-    if (clean_na_cells) {
+  if (clean_na_cells) {
     keep_cells <- colnames(pmhc_mat_ordered)[colSums(is.na(pmhc_mat_ordered)) == 0]
-
+    
     if (length(keep_cells) == 0) {
       stop("clean_na_cells=TRUE removed all cells (every column had at least one NA).")
     }
-
+    
     pmhc_mat_ordered    <- pmhc_mat_ordered[, keep_cells, drop = FALSE]
     ann_subset_ordered  <- ann_subset_ordered[keep_cells, , drop = FALSE]
-
-    # keep internal ordering consistent for anything downstream
+    
     cells_order <- keep_cells
   }
-
+  
+ 
+  all_data <- as.numeric(pmhc_mat_ordered)
+  
+  if (!is.null(hm_breaks) && !is.null(hm_palette)) {
+    col_fun <- circlize::colorRamp2(
+      breaks = hm_breaks, 
+      colors = hm_palette
+    )
+  } else {
+    my_breaks <- quantile(all_data, probs = seq(0, 1, length.out = 100), names = FALSE)
+    col_fun <- circlize::colorRamp2(
+      breaks = my_breaks, 
+      colors = colorRampPalette(c("blue", "cyan", "yellow", "red"))(100)
+    )
+  }
+  # ==========================================
   
   cust_cols_present <- intersect(custom_annotations, colnames(ann_subset_ordered))
   
@@ -427,7 +440,7 @@ pmhc_heatmap <- function(object, clones, patient=NULL, slot='counts', assay = 'p
   }
   
   for (cn in cust_cols_present) {
-    lev <- level_map[[cn]]  # ordered!
+    lev <- level_map[[cn]]  
     pal <- custom_ann_palette[[cn]]
     if (!is.null(pal)) {
       names(pal) <- trimws(names(pal))
@@ -447,7 +460,6 @@ pmhc_heatmap <- function(object, clones, patient=NULL, slot='counts', assay = 'p
     list(at = level_map[[cn]], labels = level_map[[cn]])
   })
   names(ann_legend_param) <- cust_cols_present
-  
   
   if (!is.null(pmhc_order)){
     pmhc_order <- pmhc_order[pmhc_order %in% rownames(pmhc_mat_ordered)] 
@@ -470,7 +482,6 @@ pmhc_heatmap <- function(object, clones, patient=NULL, slot='counts', assay = 'p
       col = color_list,
       which = "col",
       show_legend = rep(show_legend_ann, length.out = length(ann_list)),
-      # give each track the same width to avoid mismatches
       annotation_width = unit(rep(4, length(ann_list)), "mm"),
       gap = unit(1, "mm")
     )
@@ -532,7 +543,6 @@ pmhc_heatmap <- function(object, clones, patient=NULL, slot='counts', assay = 'p
     }
     
     left_ann_df <- tibble::column_to_rownames(left_ann_df, 'pmhc')
-    
     left_ann_df <- left_ann_df[rownames(pmhc_mat_ordered), , drop = FALSE]
     
     left_ann <- ComplexHeatmap::rowAnnotation(
@@ -544,8 +554,8 @@ pmhc_heatmap <- function(object, clones, patient=NULL, slot='counts', assay = 'p
   }
   
   if (clean_na_features){
-    nonna <- rownames( pmhc_mat_ordered)[rowSums(is.na( pmhc_mat_ordered)) == 0]
-    pmhc_mat_ordered <-  pmhc_mat_ordered[nonna,]
+    nonna <- rownames(pmhc_mat_ordered)[rowSums(is.na(pmhc_mat_ordered)) == 0]
+    pmhc_mat_ordered <- pmhc_mat_ordered[nonna,]
   }
   
   if (flip) {
@@ -560,7 +570,7 @@ pmhc_heatmap <- function(object, clones, patient=NULL, slot='counts', assay = 'p
     left_ann <- ComplexHeatmap::rowAnnotation(
       df  = row_ann_df,
       col = color_list,
-      show_legend = rep(show_legend_ann, length.out = ncol(row_ann_df))  # hide/show per track
+      show_legend = rep(show_legend_ann, length.out = ncol(row_ann_df))  
     )
     
     if (!is.null(left_ann_vars)) {
@@ -578,18 +588,25 @@ pmhc_heatmap <- function(object, clones, patient=NULL, slot='counts', assay = 'p
   
   show_row_names2    <- if (flip) FALSE else show_row_names
   show_column_names <- if (flip) TRUE else FALSE
+  
   pmhc_subset_hmap <- ComplexHeatmap::Heatmap(
-    pmhc_mat_ordered, name = "pmhc_tcr_hmap", 
+    pmhc_mat_ordered, 
+    name = "pmhc_tcr_hmap",
     show_heatmap_legend = show_heatmap_legend, 
-    row_split = split_rows, column_split = split_cols,
+    row_split = split_rows, 
+    column_split = column_split_var,
     show_row_names = show_row_names2, 
     show_column_names = show_column_names,
-    col = col_fun, na_col = na_col,
+    col = col_fun, 
+    na_col = na_col,
     cluster_rows = F, cluster_columns = F,
     row_names_gp = grid::gpar(fontsize = rowm.fonts),  
     column_title_gp = grid::gpar(fontsize = column_title_fonts), 
     column_title_rot = column_title_rot,
-    top_annotation=hm22ann, left_annotation = left_ann)
+    top_annotation = hm22ann, 
+    left_annotation = left_ann, 
+    heatmap_legend_param = modifyList(list(title = "UMI COUNTS"), heatmap_legend_param)
+  )
   
   ### BOOM!
   if (!highlight_pmhc.tcr){
